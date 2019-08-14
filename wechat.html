@@ -1,0 +1,58 @@
+<!-- 
+    当进行微信开发的时候，后台通过nginx进行反向代理之后，导致微信获取openid的获取code进行两次请求， 经测试苹果手机不会，而安卓手机会
+    具体原因这个帖子讲解的非常详细了：https://developers.weixin.qq.com/community/develop/doc/b8f9f09573e92ffb0e23308d54bcdcf7
+    现在通过后端根据code请求获取openid，通过ajax调用后端接口，这样避免了两次调用， 上面帖子中提到的加一个参数，加上这个参数安卓还是不起作用
+    @author lucas
+    @date 2019-8-14 10:04:02
+    @since 1.0
+ -->
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>正在为您选择最佳线路中</title>
+        <style>
+            .load{
+                text-align: center;
+                line-height: 500px;
+                font-size: 100px;
+                font-family: 微软雅黑;
+                color: #00BCD4;
+            }
+        </style>
+        <script src="./jquery.min.js"></script>
+        <script>
+            /***
+             *  获取路径中的参数code state， 利用state来判断进入哪一个页面
+             * */
+            function getQueryString(name) {
+                let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+                let r = window.location.search.substr(1).match(reg);
+                if (r != null) {
+                    return unescape(r[2]);
+                };
+                return null;
+            }
+            // 获取URL参数中的值
+            var code = getQueryString("code");
+            var state = getQueryString("state");
+            /***
+             * 请求后端通过code，拿到openid或者token， 这里你肯定会有疑问为什么拿token？
+             * token是我平台的，说明当前用户已经绑定微信登录了，就直接返回token，进入页面操作了，
+             * 如果用户第一次进入，需要带着openid进入登录页面进行用户登录绑定
+             * */
+            $.get('/openid', {code: code, state: state}, function (data, textStatus){
+                if(data.code == 200){
+                    if(data.data.type == 1){
+                        location.href = "/m/#/"+state+"?token="+data.data.token;
+                    }else{
+                        location.href = "/m/#/login?openid="+data.data.openid;
+                    }
+                }
+            });
+        </script>
+    </head>
+    <body>
+        <h1 class="load">请稍后...</h1>
+    </body>
+</html>
